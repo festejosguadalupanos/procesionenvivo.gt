@@ -1,0 +1,30 @@
+<!DOCTYPE html> 
+<html> 
+<head> 
+	<title>Tracker</title> 
+	<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script> 
+	<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script> 
+</head> 
+<body>
+	<h2>Enviando ubicación...</h2> 
+
+<script> 
+const firebaseConfig = { 
+	apiKey: "AIzaSyBqCCRgl-T4iVxOkFr54t-V5TsLEtUePUw", 
+	authDomain: "procesion2026.firebaseapp.com", 
+	databaseURL: "https://procesion2026-default-rtdb.firebaseio.com", 
+	projectId: "procesion2026", 
+}; 
+
+firebase.initializeApp(firebaseConfig); 
+const db = firebase.database(); 
+
+navigator.geolocation.watchPosition((position) => { 
+	db.ref("ubicacion").set({ 
+	lat: position.coords.latitude, 
+	lng: position.coords.longitude 
+}); 
+}); 
+</script> 
+</body> 
+</html>
