@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Procesión en Vivo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <script src="https://unpkg.com/leaflet-polylinedecorator/dist/leaflet.polylineDecorator.min.js"></script>
+
+ 
+  <style>
+
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+  }
+
+  #map {
+    height: 100vh;
+  }
+
+  .live {
+    position: absolute;
+    top: 15px;
+    left: 50px;
+    background: linear-gradient(45deg, #b30000, #ff0000);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+    z-index: 1000;
+  }
+
+  .btn {
+    position: absolute;
+    right: 15px;
+    bottom: 140px;
+    background: #ffd700;
+    color: #0d1b2a;
+    padding: 14px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 1000;
+  }
+
+  .panel {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: #0d1b2a;
+    color: white;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    box-shadow: 0 -3px 10px rgba(0,0,0,0.4);
+    z-index: 1000;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .logo-top {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 85px;
+    height: 85px;
+    object-fit: contain;
+    z-index: 1000;
+
+  }
+
+  .info h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #ffd700;
+  }
+
+  .info p {
+    margin: 2px 0 0;
+    font-size: 13px;
+    color: #ccc;
+  }
+
+
+  @media (max-width: 600px) {
+
+  .panel {
+    max-height: 90px;      /* 👈 vuelve a limitar */
+    overflow: hidden;      /* 👈 evita que se desborde */
+    padding: 8px;
+  }
+
+  .info {
+    width: 100%;
+  }
+
+  .info h3 {
+    font-size: 12px;
+    line-height: 1.1;
+  }
+
+  .info h2 {
+    font-size: 10px;
+    line-height: 1.1;
+  }
+
+  .info p {
+    font-size: 10px;
+  }
+
+}
+
+    </style>
+  </head>
+  <body>
+
+  <div id="map"></div>
+
+  <img src="logo.png" class="logo-top">
+
+  <div class="live">EN VIVO</div>
+
+  <div class="btn" onclick="centrar()">📍</div>
+
+  <div class="panel">
+
+    <div class="info">
+      <h3>SOLEMNE PROCESIÓN DE REPARACIÓN A LA SANTÍSIMA TRINIDAD</h3>
+      <h2>Asociación de Festejos Guadalupanos, Sector "El Bosque" El Gallito z.3</h2>
+      <p>VIERNES 22 DE MAYO DEL 2026</p>
+    </div>
+  </div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBqCCRgl-T4iVxOkFr54t-V5TsLEtUePUw",
+  authDomain: "procesion2026.firebaseapp.com",
+  databaseURL: "https://procesion2026-default-rtdb.firebaseio.com",
+  projectId: "procesion2026",
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const map = L.map('map').setView([14.6349, -90.5069], 13);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
+.addTo(map);
+
+
+// 🛣️ RECORRIDO DE LA PROCESIÓN
+const ruta = [
+  [14.640627178600871, -90.52488273599961],
+  [14.640389315887148, -90.52523233229658],
+  [14.639928865313806, -90.52548043289443],
+  [14.64045260048754, -90.5253338279957],
+  [14.640513702843018, -90.52540825817506],
+  [14.640677369782736, -90.52519398947692],
+  [14.64089559217905, -90.52486920323973],
+  [14.641091992150072, -90.52496167709893],
+  [14.641177098749571, -90.52506091733807],
+  [14.641022161069408, -90.52528646333612],
+  [14.64076465876731, -90.52563605963307],
+  [14.64053334288223, -90.5257826645318],
+  [14.640321666802732, -90.52589092660341],
+  [14.640391498106439, -90.52585483924373],
+  [14.64018200412864, -90.52596310132279],
+  [14.63992450084015, -90.52609617346162],
+  [14.639682272884729, -90.52636682864625],
+  [14.639514240729268, -90.52659011918432],
+  [14.639350572921616, -90.52679536604252],
+  [14.639169447072128, -90.52700061290075],
+  [14.638962134169255, -90.52705699940026],
+  [14.638929400523391, -90.52688558444017],
+  [14.638887937913115, -90.52672544678155],
+  [14.638846475295002, -90.52649764532354],
+  [14.638833381835026, -90.52639389416443],
+  [14.638787554718943, -90.5262247346659],
+  [14.638772279011446, -90.52603076510759],
+  [14.638743909837585, -90.52580296364957],
+  [14.638726451881167, -90.52560222771805],
+  [14.638693718211846, -90.52539698085984],
+  [14.638580241445194, -90.52542179092012],
+  [14.63840784395029, -90.5254556228198],
+  [14.638255086563124, -90.52547817741961],
+  [14.63810669357086, -90.52550524293937],
+  [14.637949571469647, -90.52551877569925],
+  [14.63781645404583, -90.52554358575905],
+  [14.637879739387188, -90.52590671481471],
+  [14.63791247317797, -90.52617511455237],
+  [14.637929931197732, -90.52636006227077],
+  [14.637986669757064, -90.52666454935552],
+  [14.638034679291819, -90.52696678099288],
+  [14.63807395981243, -90.52718104969104],
+  [14.638130698326991, -90.52740885113461],
+  [14.63817216108039, -90.52773814829175],
+  [14.638211441576386, -90.52802233624928],
+  [14.638348923256974, -90.52800654802942],
+  [14.638499498332106, -90.52797271612971],
+  [14.638532232032814, -90.52810578826245],
+  [14.63859115267747, -90.52848245007917],
+  [14.638604246151912, -90.52867867509748],
+  [14.638477675866268, -90.52871927337712],
+  [14.638320554030773, -90.528732806137],
+  [14.638298731544719, -90.52856815755844],
+  [14.638252904316948, -90.52826592592106],
+  [14.638215806077918, -90.52803586900306],
+  [14.63834674101117, -90.52799075980344],
+  [14.63850822732121, -90.52797271612361],
+  [14.63847985811272, -90.52779904571183],
+  [14.638434030922774, -90.52744042757494],
+  [14.638434030922774, -90.52744042757494],
+  [14.638244175313913, -90.5271652614565],
+  [14.638073959805865, -90.52719458243624],
+  [14.637921202186185, -90.52721713703605],
+  [14.637796813760161, -90.52724645801578],
+  [14.637663696243637, -90.52725547985571],
+  [14.637521849620757, -90.5272915672154],
+  [14.637476022222586, -90.52706376576484],
+  [14.637428012565572, -90.52676604504742],
+  [14.637375638382318, -90.5264931343898],
+  [14.63722942705452, -90.52649990076972],
+  [14.637094126933015, -90.52652019990956],
+  [14.637115949538899, -90.52666906026826],
+  [14.637166141524194, -90.52693971546591]
+];
+
+// Dibujar línea
+L.polyline(ruta, {
+  color: '#33CCFF',
+  weight: 5,
+  opacity: 0.8
+}).addTo(map);
+
+L.polylineDecorator(linea, {
+  patterns: [
+    {
+      offset: 25,
+      repeat: 50,
+      symbol: L.Symbol.arrowHead({
+        pixelSize: 10,
+        pathOptions: {
+          fillOpacity: 1,
+          weight: 0,
+          color: '#33CCFF'
+        }
+      })
+    }
+  ]
+}).addTo(map);
+
+// Ajustar mapa a la ruta (opcional pero recomendado)
+map.fitBounds(ruta);
+
+
+/* 🖼️ ICONO PERSONALIZADO */
+const icono = L.icon({
+  iconUrl: 'icono.png', // 👈 CAMBIA POR TU IMAGEN
+  iconSize: [45, 45],
+});
+
+let marker = L.marker([14.6349, -90.5069], { icon: icono }).addTo(map);
+
+let ultimaPosicion = [14.6349, -90.5069];
+
+db.ref("ubicacion").on("value", (snapshot) => {
+  const data = snapshot.val();
+  if (data) {
+    ultimaPosicion = [data.lat, data.lng];
+    marker.setLatLng(ultimaPosicion);
+    map.panTo(ultimaPosicion);
+  }
+});
+
+function centrar() {
+  map.setView(ultimaPosicion, 16);
+}
+</script>
+
+</body>
+</html>
