@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Procesión en Vivo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+ 
+  <style>
+
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+  }
+  
+  #map {
+    height: 100vh;
+  }
+
+  .mensaje {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    
+    background: rgba(13, 27, 42, 0.9);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 15px;
+    
+    font-size: 18px;
+    text-align: center;
+    
+    z-index: 2000;
+    display: none;
+  }
+    
+  .live {
+    position: absolute;
+    top: 15px;
+    left: 50px;
+    background: linear-gradient(45deg, #b30000, #ff0000);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+    z-index: 1000;
+  }
+  
+  .btn {
+    position: absolute;
+    right: 15px;
+    bottom: 140px;
+    background: #ffd700;
+    color: #0d1b2a;
+    padding: 14px;
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 1000;
+  }
+  
+  .panel {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background: #0d1b2a;
+    color: white;
+    padding: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    box-shadow: 0 -3px 10px rgba(0,0,0,0.4);
+    z-index: 1000;
+    justify-content: center;
+    text-align: center;
+  }
+  
+  .logo-top {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 85px;
+    height: 85px;
+    object-fit: contain;
+    z-index: 1000;
+    
+  }
+  
+  .info h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #ffd700;
+  }
+  
+  .info p {
+    margin: 2px 0 0;
+    font-size: 13px;
+    color: #ccc;
+  }
+
+
+  @media (max-width: 600px) {
+
+  .panel {
+    max-height: 90px;      /* 👈 vuelve a limitar */
+    overflow: hidden;      /* 👈 evita que se desborde */
+    padding: 8px;
+  }
+
+  .info {
+    width: 100%;
+  }
+
+  .info h3 {
+    font-size: 12px;
+    line-height: 1.1;
+  }
+
+  .info h2 {
+    font-size: 10px;
+    line-height: 1.1;
+  }
+
+  .info p {
+    font-size: 10px;
+  }
+
+}
+  
+    </style>
+  </head>
+  <body>
+  
+  <div id="map"></div>
+
+  <div id="mensajeEstado" class="mensaje">
+  La procesión no ha iniciado
+  </div>
+
+  <img src="logo.png" class="logo-top">
+  
+  <div class="live">EN VIVO</div>
+  
+  <div class="btn" onclick="centrar()">📍</div>
+  
+  <div class="panel">
+  
+    <div class="info">
+      <h3>SOLEMNE PROCESIÓN DE REPARACIÓN A LA SANTÍSIMA TRINIDAD</h3>
+      <h2>Asociación de Festejos Guadalupanos, Sector "El Bosque" El Gallito z.3</h2>
+      <p>VIERNES 22 DE MAYO DEL 2026</p>
+    </div>
+  </div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBqCCRgl-T4iVxOkFr54t-V5TsLEtUePUw",
+  authDomain: "procesion2026.firebaseapp.com",
+  databaseURL: "https://procesion2026-default-rtdb.firebaseio.com",
+  projectId: "procesion2026",
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const map = L.map('map').setView([14.6349, -90.5069], 13);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
+.addTo(map);
+
+
+// 🛣️ RECORRIDO DE LA PROCESIÓN
+const ruta = [
+  [14.640627717076246, -90.52490154581498],
+  [14.640561365207581, -90.5249972368778],
+  [14.640379283232365, -90.52523805938587],
+  [14.640265096153827, -90.52530823283195],
+  [14.64006604015856, -90.52540392389474],
+  [14.640265096153827, -90.52530823283195],
+  [14.640379283232365, -90.52523805938587],
+  [14.64041014459473, -90.52528431006623],
+  [14.64047186730646, -90.52535607836333],
+  [14.640511987059755, -90.52540392389474],
+  [14.640584511216991, -90.52534491440709],
+  [14.64068481053496, -90.52519340355762],
+  [14.640786652872443, -90.52502434934667],
+  [14.640866892256547, -90.52490792522025],
+  [14.640922442582198, -90.52488400245456],
+  [14.641027370936689, -90.5249302531349],
+  [14.641198650940014, -90.5250020214306],
+  [14.641135385369926, -90.52512004040805],
+  [14.641030457067114, -90.52528271521484],
+  [14.640899296617992, -90.52549164070197],
+  [14.640761963828382, -90.52564474640246],
+  [14.640522900506474, -90.52578614730265],
+  [14.640317885979458, -90.52589343566491],
+  [14.640103788320038, -90.52600206513054],
+  [14.639923427104176, -90.52608655471582],
+  [14.639792373171563, -90.5262448050433],
+  [14.639588655526929, -90.52650363821724],
+  [14.639338225290757, -90.52680404562402],
+  [14.639174731825682, -90.52699984688513],
+  [14.638954145205595, -90.52704946775124],
+  [14.638932086530328, -90.52691133398895],
+  [14.638902242438942, -90.52676515359539],
+  [14.638867208065632, -90.52660824436558],
+  [14.638824388268427, -90.5264043964773],
+  [14.638797139301673, -90.52623273510024],
+  [14.638781568461322, -90.52605705041488],
+  [14.638734855936626, -90.52569092887867],
+  [14.638715392380695, -90.52555145401269],
+  [14.638692036112525, -90.52540259141006],
+  [14.638641430846473, -90.5254119791415],
+  [14.63848182957739, -90.52544014233659],
+  [14.638396189824142, -90.52545221227734],
+  [14.638265134985504, -90.52547232884525],
+  [14.638108128590593, -90.52549646872677],
+  [14.637965395402613, -90.52552060860822],
+  [14.637816174247522, -90.5255434073852],
+  [14.63783304273102, -90.52561582702972],
+  [14.637866779696303, -90.52586661357029],
+  [14.637913492405865, -90.52614958662575],
+  [14.637947229356572, -90.5263722099774],
+  [14.637947229356572, -90.52637355108193],
+  [14.637974478428703, -90.52656532901828],
+  [14.638057523198059, -90.5269850947356],
+  [14.638083474682908, -90.52719162482977],
+  [14.638123699480296, -90.52742229480329],
+  [14.638154841251302, -90.5276462592595],
+  [14.638209339341518, -90.52792655010225],
+  [14.638210636914906, -90.52797885317884],
+  [14.638219719928298, -90.52802579183734],
+  [14.638263837416595, -90.52801640410564],
+  [14.638353369939114, -90.5280003108513],
+  [14.638445497569082, -90.52798555870149],
+  [14.638503888300425, -90.52797214765621],
+  [14.638516864018916, -90.52803383845583],
+  [14.638559683876158, -90.52832083482485],
+  [14.638602503725055, -90.52858905573049],
+  [14.638611586722224, -90.52868561525652],
+  [14.638558386304856, -90.52869500298823],
+  [14.638474044153314, -90.52870841403349],
+  [14.638394892258527, -90.5287231661833],
+  [14.638320930626119, -90.52873389501953],
+  [14.638318335480655, -90.52868159194293],
+  [14.63829108645159, -90.52851529498143],
+  [14.638262539846059, -90.52830340046599],
+  [14.638227505370578, -90.52806736606902],
+  [14.638219719928298, -90.52802579183734],
+  [14.638263837416595, -90.52801640410564],
+  [14.638353369939114, -90.5280003108513],
+  [14.638445497569082, -90.52798555870149],
+  [14.638503888300425, -90.52797214765621],
+  [14.638497400444676, -90.5279131390483],
+  [14.638471449007, -90.52773745436589],
+  [14.638427331560441, -90.5274290003244],
+  [14.638389701966672, -90.52721844691348],
+  [14.63837413109838, -90.52714602726896],
+  [14.638310550041453, -90.52715407389616],
+  [14.638182090298738, -90.52717553156859],
+  [14.638080879539391, -90.5271902837184],
+  [14.637986156595773, -90.52720771807843],
+  [14.637871969992677, -90.5272305168554],
+  [14.637800603335545, -90.52724124569163],
+  [14.637704582705693, -90.52726136225955],
+  [14.637582610493666, -90.52728684324558],
+  [14.637506053432316, -90.52728684324558],
+  [14.637498267966945, -90.5272157647056],
+  [14.637464530942593, -90.5270038701975],
+  [14.637412627825146, -90.5267423548145],
+  [14.637380188370491, -90.52654521244888],
+  [14.637363319852188, -90.52648218053605],
+  [14.637303631238506, -90.52649290937227],
+  [14.637157004792495, -90.52652107256738],
+  [14.637083042739032, -90.52653046029911],
+  [14.637090828219137, -90.52659885663007],
+  [14.637121970136754, -90.52675040144173],
+  [14.637150516890703, -90.52688853520814]
+];
+
+// Dibujar línea
+let lineaRuta = L.polyline(ruta, {
+  color: '#33CCFF',
+  weight: 5,
+  opacity: 0.8
+}).addTo(map);
+
+
+// Ajustar mapa a la ruta (opcional pero recomendado)
+map.fitBounds(ruta);
+  
+
+/* 🖼️ ICONO PERSONALIZADO */
+const icono = L.icon({
+  iconUrl: 'logo_trini.png', // 👈 CAMBIA POR TU IMAGEN
+  iconSize: [75, 75],
+});
+
+let marker = null;
+let ultimaPosicion = [14.6349, -90.5069];
+let lineaRecorrida;
+let activo = false;
+let estadoActual = "inactivo";
+const mensaje = document.getElementById("mensajeEstado");
+
+db.ref("estado").on("value", (snapshot) => {
+  const estado = snapshot.val();
+
+  estadoActual = estado;
+  activo = (estado === "activo");
+
+  if (estado === "activo") {
+    mensaje.style.display = "none";
+  
+    // volver a mostrar ruta si no existe
+    if (!map.hasLayer(lineaRuta)) {
+      lineaRuta.addTo(map);
+    }
+  }
+
+  if (estado === "inactivo") {
+    mensaje.style.display = "block";
+    mensaje.innerHTML = "🟡 La procesión no ha iniciado";
+  }
+
+  if (estado === "finalizado") {
+    mensaje.style.display = "block";
+    mensaje.innerHTML = "🔴 La procesión ha finalizado";
+  }
+
+
+  // ocultar solo marcador y recorrido (NO la ruta)
+  if (!activo) {
+    if (marker) {
+      map.removeLayer(marker);
+      marker = null;
+    }
+  }
+});
+
+db.ref("ubicacion").on("value", (snapshot) => {
+
+  if (!activo) return;
+  
+  const data = snapshot.val();
+  if (data) {
+    ultimaPosicion = [data.lat, data.lng];
+    if (marker) {
+  marker.setLatLng(ultimaPosicion);
+} else {
+  marker = L.marker(ultimaPosicion, { icon: icono }).addTo(map);
+}
+    map.panTo(ultimaPosicion);
+  }
+});
+
+function centrar() {
+  map.setView(ultimaPosicion, 16);
+}
+</script>
+
+</body>
+</html>
