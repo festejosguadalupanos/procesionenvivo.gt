@@ -46,17 +46,38 @@
     .deshacer { top: 60px; }
     .iniciar { top: 100px; background: green; }
     .finalizar { top: 140px; background: red; }
+
+    .gps {
+      top: 180px;
+      background: #0077ff;
+    }
+    
+    .auto {
+      top: 220px;
+      background: #ff9800;
+    }
+
+    
   </style>
 </head>
 
 <body>
 
-<div class="titulo">Toca el mapa para enviar ubicación 📍</div>
+<div class="titulo">
+  Tracker GPS Procesión 📍
+</div>
 
 <button class="btn deshacer" onclick="deshacer()">↩️ Deshacer</button>
 <button class="btn iniciar" onclick="iniciar()">▶️ Iniciar</button>
 <button class="btn finalizar" onclick="finalizar()">⛔ Finalizar</button>
+<button class="btn gps" onclick="tomarUbicacion()">📍 Actualizar</button>
 
+<button class="btn auto" onclick="toggleSeguimiento()">
+  🚶 Auto GPS
+</button>
+
+
+  
 <div id="map"></div>
 
 <script>
@@ -71,7 +92,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 // Crear mapa
-const map = L.map('map').setView([14.6349, -90.5069], 16);
+const map = L.map('map').setView([14.6349, -90.5069], 18);
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
 .addTo(map);
@@ -80,42 +101,8 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png')
 let marker;
 let recorrido = [];
 let lineaRecorrida;
-
-// CLICK EN MAPA
-map.on('click', function(e) {
-
-  const lat = e.latlng.lat;
-  const lng = e.latlng.lng;
-  const punto = [lat, lng];
-
-  // Guardar punto
-  recorrido.push(punto);
-
-  // Guardar en Firebase
-  db.ref("recorrido").set(recorrido);
-
-  // Marcador
-  if (marker) {
-    marker.setLatLng(punto);
-  } else {
-    marker = L.marker(punto).addTo(map);
-  }
-
-  // Dibujar recorrido
-  if (lineaRecorrida) {
-    map.removeLayer(lineaRecorrida);
-  }
-
-  lineaRecorrida = L.polyline(recorrido, {
-    color: 'black',
-    weight: 6,
-    opacity: 0.9
-  }).addTo(map);
-
-  // Ubicación actual
-  db.ref("ubicacion").set({ lat, lng });
-
-});
+let seguimientoAutomatico = false;
+let watchId = null;
 
 // 🔁 DESHACER
 function deshacer() {
@@ -137,7 +124,16 @@ function deshacer() {
     }).addTo(map);
 
     if (recorrido.length > 0) {
+
       marker.setLatLng(recorrido[recorrido.length - 1]);
+    
+    } else {
+    
+      if (marker) {
+        map.removeLayer(marker);
+        marker = null;
+      }
+    
     }
 
   } else {
@@ -156,6 +152,117 @@ function finalizar() {
   db.ref("estado").set("inactivo");
   alert("Procesión finalizada");
 }
+
+
+  /* =========================================================
+   📍 TOMAR UBICACIÓN GPS
+========================================================= */
+
+  function tomarUbicacion() {
+  
+    if (!navigator.geolocation) {
+      alert("Tu dispositivo no soporta GPS");
+      return;
+    }
+  
+    navigator.geolocation.getCurrentPosition(
+  
+      function(posicion) {
+  
+        const lat = posicion.coords.latitude;
+        const lng = posicion.coords.longitude;
+  
+        const punto = [lat, lng];
+  
+        // Guardar recorrido
+        const ultimo = recorrido[recorrido.length - 1];
+
+        if (
+          !ultimo ||
+          ultimo[0] !== lat ||
+          ultimo[1] !== lng
+        ) {
+          recorrido.push(punto);
+        }
+  
+        db.ref("recorrido").set(recorrido);
+  
+        // Marcador
+        if (marker) {
+  
+          marker.setLatLng(punto);
+  
+        } else {
+  
+          marker = L.marker(punto).addTo(map);
+  
+        }
+  
+        // Dibujar línea
+        if (lineaRecorrida) {
+          map.removeLayer(lineaRecorrida);
+        }
+  
+        lineaRecorrida = L.polyline(recorrido, {
+          color: 'black',
+          weight: 6,
+          opacity: 0.9
+        }).addTo(map);
+  
+        // Firebase ubicación
+        db.ref("ubicacion").set({ lat, lng });
+  
+        // Centrar mapa
+        map.setView(punto, 18);
+  
+      },
+  
+      function(error) {
+  
+        alert("No se pudo obtener ubicación");
+  
+      },
+  
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+  
+    );
+  
+  }
+  
+  
+  /* =========================================================
+     🚶 SEGUIMIENTO AUTOMÁTICO
+  ========================================================= */
+  
+  function toggleSeguimiento() {
+  
+    if (!seguimientoAutomatico) {
+  
+      seguimientoAutomatico = true;
+  
+      watchId = setInterval(() => {
+  
+        tomarUbicacion();
+  
+      }, 5000);
+  
+      alert("GPS automático activado");
+  
+    } else {
+  
+      seguimientoAutomatico = false;
+  
+      clearInterval(watchId);
+  
+      alert("GPS automático detenido");
+  
+    }
+  
+  }
 
 </script>
 
