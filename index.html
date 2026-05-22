@@ -10,14 +10,14 @@
 
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
- 
+
   <style>
 
   body {
     margin: 0;
     font-family: 'Segoe UI', sans-serif;
   }
-  
+
   #map {
     height: 100vh;
   }
@@ -27,19 +27,19 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    
+
     background: rgba(13, 27, 42, 0.9);
     color: white;
     padding: 20px 30px;
     border-radius: 15px;
-    
+
     font-size: 18px;
     text-align: center;
-    
+
     z-index: 2000;
     display: none;
   }
-    
+
   .live {
     position: absolute;
     top: 15px;
@@ -51,7 +51,7 @@
     font-weight: bold;
     z-index: 1000;
   }
-  
+
   .btn {
     position: absolute;
     right: 15px;
@@ -62,8 +62,9 @@
     border-radius: 50%;
     cursor: pointer;
     z-index: 1000;
+    font-size: 18px;
   }
-  
+
   .panel {
     position: absolute;
     bottom: 0;
@@ -81,7 +82,7 @@
     justify-content: center;
     text-align: center;
   }
-  
+
   .logo-top {
     position: absolute;
     top: 15px;
@@ -90,76 +91,140 @@
     height: 85px;
     object-fit: contain;
     z-index: 1000;
-    
   }
-  
+
   .info h3 {
     margin: 0;
     font-size: 16px;
     color: #ffd700;
   }
-  
+
+  .info h2 {
+    margin: 4px 0;
+    font-size: 14px;
+  }
+
   .info p {
     margin: 2px 0 0;
     font-size: 13px;
     color: #ccc;
   }
 
+  /* 📌 LEYENDA */
+  .leyenda {
+    position: absolute;
+    bottom: 120px;
+    left: 15px;
+    background: rgba(13, 27, 42, 0.92);
+    color: white;
+    padding: 10px 14px;
+    border-radius: 12px;
+    z-index: 1000;
+    font-size: 13px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+  }
+
+  .leyenda-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .leyenda-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .linea {
+    width: 30px;
+    height: 5px;
+    border-radius: 5px;
+    margin-right: 10px;
+  }
+
+  .azul {
+    background: #33CCFF;
+  }
+
+  .rojo {
+    background: #ff0000;
+  }
 
   @media (max-width: 600px) {
 
-  .panel {
-    max-height: 90px;      /* 👈 vuelve a limitar */
-    overflow: hidden;      /* 👈 evita que se desborde */
-    padding: 8px;
+    .panel {
+      max-height: 90px;
+      overflow: hidden;
+      padding: 8px;
+    }
+
+    .info {
+      width: 100%;
+    }
+
+    .info h3 {
+      font-size: 12px;
+      line-height: 1.1;
+    }
+
+    .info h2 {
+      font-size: 10px;
+      line-height: 1.1;
+    }
+
+    .info p {
+      font-size: 10px;
+    }
+
+    .leyenda {
+      bottom: 105px;
+      font-size: 11px;
+      padding: 8px 10px;
+    }
+
   }
 
-  .info {
-    width: 100%;
-  }
+  </style>
+</head>
 
-  .info h3 {
-    font-size: 12px;
-    line-height: 1.1;
-  }
+<body>
 
-  .info h2 {
-    font-size: 10px;
-    line-height: 1.1;
-  }
+<div id="map"></div>
 
-  .info p {
-    font-size: 10px;
-  }
-
-}
-  
-    </style>
-  </head>
-  <body>
-  
-  <div id="map"></div>
-
-  <div id="mensajeEstado" class="mensaje">
+<div id="mensajeEstado" class="mensaje">
   La procesión no ha iniciado
+</div>
+
+<img src="logo.png" class="logo-top">
+
+<div class="live">EN VIVO</div>
+
+<div class="btn" onclick="centrar()">📍</div>
+
+<!-- 📌 LEYENDA -->
+<div class="leyenda">
+  <div class="leyenda-item">
+    <div class="linea azul"></div>
+    <span>Ida</span>
   </div>
 
-  <img src="logo.png" class="logo-top">
-  
-  <div class="live">EN VIVO</div>
-  
-  <div class="btn" onclick="centrar()">📍</div>
-  
-  <div class="panel">
-  
-    <div class="info">
-      <h3>SOLEMNE PROCESIÓN DE REPARACIÓN A LA SANTÍSIMA TRINIDAD</h3>
-      <h2>Asociación de Festejos Guadalupanos, Sector "El Bosque" El Gallito z.3</h2>
-      <p>VIERNES 22 DE MAYO DEL 2026</p>
-    </div>
+  <div class="leyenda-item">
+    <div class="linea rojo"></div>
+    <span>Vuelta</span>
   </div>
+</div>
+
+<div class="panel">
+
+  <div class="info">
+    <h3>SOLEMNE PROCESIÓN DE REPARACIÓN A LA SANTÍSIMA TRINIDAD</h3>
+    <h2>Asociación de Festejos Guadalupanos, Sector "El Bosque" El Gallito z.3</h2>
+    <p>VIERNES 22 DE MAYO DEL 2026</p>
+  </div>
+
+</div>
 
 <script>
+
 const firebaseConfig = {
   apiKey: "AIzaSyBqCCRgl-T4iVxOkFr54t-V5TsLEtUePUw",
   authDomain: "procesion2026.firebaseapp.com",
@@ -285,85 +350,152 @@ const ruta = [
   [14.637150516890703, -90.52688853520814]
 ];
 
-// Dibujar línea
-let lineaRuta = L.polyline(ruta, {
+const puntoDivision = 55;
+
+/* Ruta ida */
+const rutaIda = ruta.slice(0, puntoDivision);
+
+/* Ruta vuelta */
+const rutaVuelta = ruta.slice(puntoDivision);
+
+
+/* =========================================================
+   🔵 RUTA IDA
+========================================================= */
+
+const lineaIda = L.polyline(rutaIda, {
   color: '#33CCFF',
   weight: 5,
-  opacity: 0.8
+  opacity: 0.9
 }).addTo(map);
 
 
-// Ajustar mapa a la ruta (opcional pero recomendado)
-map.fitBounds(ruta);
-  
+/* =========================================================
+   🔴 RUTA VUELTA
+========================================================= */
 
-/* 🖼️ ICONO PERSONALIZADO */
+const lineaVuelta = L.polyline(rutaVuelta, {
+  color: '#ff0000',
+  weight: 5,
+  opacity: 0.9
+}).addTo(map);
+
+
+/* Ajustar mapa */
+map.fitBounds(ruta);
+
+
+/* =========================================================
+   🖼️ ICONO
+========================================================= */
+
 const icono = L.icon({
-  iconUrl: 'logo_trini.png', // 👈 CAMBIA POR TU IMAGEN
+  iconUrl: 'logo_trini.png',
   iconSize: [75, 75],
 });
 
+
 let marker = null;
 let ultimaPosicion = [14.6349, -90.5069];
-let lineaRecorrida;
+
 let activo = false;
 let estadoActual = "inactivo";
+
 const mensaje = document.getElementById("mensajeEstado");
 
+
+/* =========================================================
+   📡 ESTADO
+========================================================= */
+
 db.ref("estado").on("value", (snapshot) => {
+
   const estado = snapshot.val();
 
   estadoActual = estado;
   activo = (estado === "activo");
 
   if (estado === "activo") {
+
     mensaje.style.display = "none";
-  
-    // volver a mostrar ruta si no existe
-    if (!map.hasLayer(lineaRuta)) {
-      lineaRuta.addTo(map);
+
+    if (!map.hasLayer(lineaIda)) {
+      lineaIda.addTo(map);
     }
+
+    if (!map.hasLayer(lineaVuelta)) {
+      lineaVuelta.addTo(map);
+    }
+
   }
 
   if (estado === "inactivo") {
+
     mensaje.style.display = "block";
     mensaje.innerHTML = "🟡 La procesión no ha iniciado";
+
   }
 
   if (estado === "finalizado") {
+
     mensaje.style.display = "block";
     mensaje.innerHTML = "🔴 La procesión ha finalizado";
+
   }
 
-
-  // ocultar solo marcador y recorrido (NO la ruta)
   if (!activo) {
+
     if (marker) {
       map.removeLayer(marker);
       marker = null;
     }
+
   }
+
 });
+
+
+/* =========================================================
+   📍 UBICACIÓN EN TIEMPO REAL
+========================================================= */
 
 db.ref("ubicacion").on("value", (snapshot) => {
 
   if (!activo) return;
-  
+
   const data = snapshot.val();
+
   if (data) {
+
     ultimaPosicion = [data.lat, data.lng];
+
     if (marker) {
-  marker.setLatLng(ultimaPosicion);
-} else {
-  marker = L.marker(ultimaPosicion, { icon: icono }).addTo(map);
-}
+
+      marker.setLatLng(ultimaPosicion);
+
+    } else {
+
+      marker = L.marker(ultimaPosicion, {
+        icon: icono
+      }).addTo(map);
+
+    }
+
     map.panTo(ultimaPosicion);
+
   }
+
 });
+
+
+/* =========================================================
+   🎯 BOTÓN CENTRAR
+========================================================= */
 
 function centrar() {
   map.setView(ultimaPosicion, 16);
 }
+
 </script>
 
 </body>
