@@ -76,7 +76,7 @@
   .panel {
     position: absolute;
     bottom: 0;
-    width: 100%;
+    width: calc(100% - 24px);
     background: #0d1b2a;
     color: white;
     padding: 12px;
@@ -159,6 +159,12 @@
 
   @media (max-width: 600px) {
 
+
+    .logo-top{
+      width: 65px;
+      height: 65px;
+    }
+    
     .panel {
       max-height: 90px;
       overflow: hidden;
@@ -491,9 +497,10 @@ db.ref("ubicacion").on("value", (snapshot) => {
 
     }
 
-    map.panTo(ultimaPosicion);
-
-  }
+    map.panTo(ultimaPosicion, {
+    animate: true,
+    duration: 1.5
+  });
 
 });
 
