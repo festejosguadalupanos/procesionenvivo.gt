@@ -23,8 +23,8 @@
 
 <body>
 
-  <!-- 🗺️ CONTENEDOR DEL MAPA -->
-  <div id="map"></div>
+  <!-- 🗺️ CONTENEDOR DEL MAPA (CON MODO NOCHE POR DEFECTO) -->
+  <div id="map" class="modo-noche"></div>
 
   <!-- 🟢 BARRA SUPERIOR (ESTADO EN VIVO Y CONEXIÓN) -->
   <div class="header-bar">
@@ -122,33 +122,25 @@
     L.control.zoom({ position: 'topleft' }).addTo(map);
 
     // ===================================================================
-    // 3. CAPAS DE MAPA (MODO NOCHE ELEGANTE Y MODO DÍA)
+    // 3. CAPA DE MAPA (OPENSTREETMAP 100% LIBRE DE API KEY)
     // ===================================================================
-    const capaNoche = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap &copy; CARTO'
-    });
-
-    const capaDia = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors'
-    });
+    }).addTo(map);
 
-    // Iniciar con Modo Noche por defecto (solemne para procesiones nocturnas)
     let esModoNoche = true;
-    capaNoche.addTo(map);
 
     function toggleTemaMapa() {
       esModoNoche = !esModoNoche;
+      const mapDiv = document.getElementById("map");
       const btn = document.getElementById("btnTema");
       if (esModoNoche) {
-        map.removeLayer(capaDia);
-        capaNoche.addTo(map);
+        mapDiv.classList.add("modo-noche");
         btn.innerText = "🌙";
         btn.title = "Cambiar a Modo Día";
       } else {
-        map.removeLayer(capaNoche);
-        capaDia.addTo(map);
+        mapDiv.classList.remove("modo-noche");
         btn.innerText = "☀️";
         btn.title = "Cambiar a Modo Noche";
       }

@@ -31,6 +31,12 @@ body, html {
   width: 100%;
   height: 100vh;
   z-index: 1;
+  background-color: #121820;
+}
+
+/* 🌙 MODO NOCHE ELEGANTE (100% Libre y sin marcas de agua de API Key) */
+#map.modo-noche .leaflet-tile {
+  filter: brightness(0.7) invert(100%) hue-rotate(180deg) contrast(110%);
 }
 
 /* 🟢 / 🔴 ESTADO EN VIVO (BARRA SUPERIOR) */
