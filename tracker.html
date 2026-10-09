@@ -91,14 +91,28 @@
     <!-- 3. Herramientas secundarias -->
     <div class="row-extra">
       <button id="btnModoManual" class="btn-small" onclick="toggleModoManual()">
-        <span>🗺️</span> Modo Toque Manual
+        <span>🗺️</span> Modo Manual
+      </button>
+
+      <button class="btn-small" onclick="activarModoAnda()" style="color: var(--color-gold); border-color: rgba(255,215,0,0.4);" title="Pantalla negra protegida contra toques accidentales">
+        <span>🕶️</span> Modo Anda
       </button>
 
       <button class="btn-small" onclick="deshacerUltimoPunto()">
-        <span>↩️</span> Deshacer punto
+        <span>↩️</span> Deshacer
       </button>
     </div>
 
+  </div>
+
+  <!-- 🕶️ OVERLAY PROTEGIDO CONTRA TOQUES ACCIDENTALES EN EL ANDA -->
+  <div id="overlayModoAnda" class="overlay-anda" style="display: none;" onclick="manejarToqueOverlay()">
+    <div class="overlay-anda-content">
+      <div class="overlay-icon">🕊️</div>
+      <h3>TRANSMITIENDO EN VIVO DESDE EL ANDA</h3>
+      <p id="overlayStatusTxt">GPS Activo | Pantalla Protegida</p>
+      <span class="overlay-tip">Toca 2 veces seguidas para desbloquear</span>
+    </div>
   </div>
 
   <script>
@@ -233,6 +247,32 @@
     let autoGpsActivo = false;
     let watchId = null;
     let timerAutoFallback = null;
+    let wakeLock = null;
+
+    // 💡 Evitar que la pantalla se apague o bloquee
+    async function activarWakeLock() {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+          console.log('💡 Pantalla configurada para no apagarse');
+        }
+      } catch (err) {
+        console.warn('Wake Lock no soportado o bloqueado:', err);
+      }
+    }
+
+    function liberarWakeLock() {
+      if (wakeLock !== null) {
+        wakeLock.release().then(() => { wakeLock = null; });
+      }
+    }
+
+    // Si el usuario cambia de app y regresa, reactivar el bloqueo de pantalla
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && autoGpsActivo) {
+        activarWakeLock();
+      }
+    });
 
     function toggleAutoGPS() {
       const btn = document.getElementById("btnAutoGps");
@@ -249,6 +289,9 @@
         btn.classList.add("on");
         icon.innerText = "🛑";
         label.innerText = "Detener Auto GPS";
+
+        // Activar pantalla siempre encendida
+        activarWakeLock();
 
         // Tomar primera posición inmediatamente
         tomarUbicacionGPS(false);
@@ -271,6 +314,9 @@
         btn.classList.remove("on");
         icon.innerText = "🚶";
         label.innerText = "Iniciar Auto GPS";
+
+        // Liberar bloqueo de pantalla
+        liberarWakeLock();
 
         if (watchId !== null) {
           navigator.geolocation.clearWatch(watchId);
@@ -484,6 +530,26 @@
       if (navigator.vibrate) {
         navigator.vibrate(100);
       }
+    }
+
+    // ===================================================================
+    // 9. MODO ANDA (BLOQUEO CONTRA TOQUES ACCIDENTALES EN EL ANDA)
+    // ===================================================================
+    let ultimoToqueOverlay = 0;
+
+    function activarModoAnda() {
+      document.getElementById("overlayModoAnda").style.display = "flex";
+      vibrarExito();
+    }
+
+    function manejarToqueOverlay() {
+      const ahora = Date.now();
+      if (ahora - ultimoToqueOverlay < 400) {
+        // Doble toque detectado: Desbloquear pantalla
+        document.getElementById("overlayModoAnda").style.display = "none";
+        vibrarExito();
+      }
+      ultimoToqueOverlay = ahora;
     }
   </script>
 
