@@ -116,3 +116,44 @@ const puntoDivisionRuta = 55;
 // Segmentos calculados
 const rutaIdaCoords = rutaProcesion.slice(0, puntoDivisionRuta + 1);
 const rutaVueltaCoords = rutaProcesion.slice(puntoDivisionRuta);
+
+// ===================================================================
+// 📍 HITOS Y PUNTOS DE REFERENCIA DEL CORTEJO (Personalizables)
+// ===================================================================
+const puntosReferencia = [
+  {
+    nombre: "Salida del Cortejo Procesional",
+    coords: [14.640627717076246, -90.52490154581498],
+    hora: "18:00 hrs",
+    descripcion: "Inicio de la Solemne Procesión de Reparación",
+    icono: "⛪"
+  },
+  {
+    nombre: "Parque / Sector El Bosque",
+    coords: [14.640522900506474, -90.52578614730265],
+    hora: "18:40 hrs",
+    descripcion: "Paso frente a los devotos del sector El Bosque",
+    icono: "🔔"
+  },
+  {
+    nombre: "Punto de Retorno / División",
+    coords: [14.638154841251302, -90.5276462592595],
+    hora: "19:30 hrs",
+    descripcion: "Culminación del tramo de ida e inicio de retorno",
+    icono: "🔄"
+  },
+  {
+    nombre: "Punto de Homenaje y Quema de Pólvora",
+    coords: [14.638559683876158, -90.52832083482485],
+    hora: "20:00 hrs",
+    descripcion: "Solemne homenaje de la Asociación",
+    icono: "✨"
+  },
+  {
+    nombre: "Entrada del Cortejo",
+    coords: [14.637150516890703, -90.52688853520814],
+    hora: "21:00 hrs",
+    descripcion: "Solemne Entrada y bendición final",
+    icono: "⛪"
+  }
+];

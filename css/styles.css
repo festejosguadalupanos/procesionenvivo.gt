@@ -309,11 +309,12 @@ body, html {
   letter-spacing: 0.3px;
 }
 
-/* 🌟 ICONO Y ONDA PULSANTE DEL MARCADOR EN EL MAPA */
+/* 🌟 ICONO Y ONDA PULSANTE DEL MARCADOR EN EL MAPA (CON TRANSICIÓN SUAVE) */
 .marker-procesion-wrap {
   position: relative;
   width: 70px;
   height: 70px;
+  transition: transform 1.2s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .marker-procesion-img {
@@ -344,6 +345,101 @@ body, html {
   0% { transform: scale(0.6); opacity: 1; }
   100% { transform: scale(1.6); opacity: 0; }
 }
+
+/* 🏷️ ETIQUETA DE HORA EN EL MARCADOR */
+.marker-time-tag {
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(13, 27, 42, 0.95);
+  color: var(--color-gold);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  z-index: 3;
+}
+
+/* 📍 PUNTOS DE REFERENCIA / HITOS DE LA RUTA */
+.marker-hito {
+  width: 32px;
+  height: 32px;
+  background: var(--color-bg-panel);
+  border: 2px solid var(--color-gold);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.5);
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.marker-hito:hover {
+  transform: scale(1.25);
+  border-color: #fff;
+}
+
+/* POPUPS DE LEAFLET PERSONALIZADOS (ESTILO OSCURO SOLEMNE) */
+.leaflet-popup-content-wrapper {
+  background: var(--color-bg-panel) !important;
+  color: #fff !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(255, 215, 0, 0.3) !important;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.6) !important;
+  backdrop-filter: blur(10px);
+}
+
+.leaflet-popup-tip {
+  background: var(--color-bg-panel) !important;
+}
+
+.popup-hito-content h4 {
+  margin: 0 0 4px 0;
+  color: var(--color-gold);
+  font-size: 14px;
+}
+
+.popup-hito-content .popup-hora {
+  display: inline-block;
+  background: rgba(255, 215, 0, 0.15);
+  color: var(--color-gold);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  margin-bottom: 6px;
+}
+
+.popup-hito-content p {
+  margin: 0;
+  font-size: 12px;
+  color: #d1d5db;
+}
+
+/* 📲 BOTÓN FLOTANTE DE WHATSAPP */
+.btn-whatsapp {
+  background: #25d366 !important;
+  color: white !important;
+  box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4) !important;
+}
+
+.btn-whatsapp:hover {
+  background: #20ba5a !important;
+}
+
+/* 🌙 BOTÓN CAMBIO DE MODO NOCHE / DÍA */
+.btn-tema {
+  background: rgba(13, 27, 42, 0.9) !important;
+  color: var(--color-gold) !important;
+  border: 1px solid rgba(255, 215, 0, 0.3) !important;
+}
+
 
 /* 📱 RESPONSIVO PARA MÓVILES */
 @media (max-width: 650px) {

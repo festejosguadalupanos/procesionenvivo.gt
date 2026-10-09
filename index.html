@@ -50,6 +50,8 @@
   <div class="btn-float-container">
     <button class="btn-float" onclick="centrarProcesion()" title="Centrar en la Procesión">📍</button>
     <button class="btn-float" onclick="verRutaCompleta()" title="Ver recorrido completo">🗺️</button>
+    <button id="btnTema" class="btn-float btn-tema" onclick="toggleTemaMapa()" title="Cambiar a Modo Día/Noche">🌙</button>
+    <button class="btn-float btn-whatsapp" onclick="compartirWhatsApp()" title="Compartir en WhatsApp">💬</button>
   </div>
 
   <!-- 📌 LEYENDA DEL RECORRIDO -->
@@ -114,18 +116,47 @@
     const zoomInicial = (typeof PROCESION_INFO !== 'undefined' && PROCESION_INFO.zoomInicial) ? PROCESION_INFO.zoomInicial : 16;
 
     const map = L.map('map', {
-      zoomControl: false // Ubicamos controles o usamos gestos
+      zoomControl: false
     }).setView(centroInicial, zoomInicial);
 
-    // Controles de zoom abajo a la derecha
     L.control.zoom({ position: 'topleft' }).addTo(map);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // ===================================================================
+    // 3. CAPAS DE MAPA (MODO NOCHE ELEGANTE Y MODO DÍA)
+    // ===================================================================
+    const capaNoche = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
       maxZoom: 19,
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+      attribution: '&copy; OpenStreetMap &copy; CARTO'
+    });
 
-    // Dibujar rutas (Ida y Vuelta)
+    const capaDia = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    });
+
+    // Iniciar con Modo Noche por defecto (solemne para procesiones nocturnas)
+    let esModoNoche = true;
+    capaNoche.addTo(map);
+
+    function toggleTemaMapa() {
+      esModoNoche = !esModoNoche;
+      const btn = document.getElementById("btnTema");
+      if (esModoNoche) {
+        map.removeLayer(capaDia);
+        capaNoche.addTo(map);
+        btn.innerText = "🌙";
+        btn.title = "Cambiar a Modo Día";
+      } else {
+        map.removeLayer(capaNoche);
+        capaDia.addTo(map);
+        btn.innerText = "☀️";
+        btn.title = "Cambiar a Modo Noche";
+      }
+    }
+
+    // ===================================================================
+    // 4. DIBUJAR RUTAS (IDA Y VUELTA)
+    // ===================================================================
     let lineaIda = null;
     let lineaVuelta = null;
 
@@ -149,34 +180,76 @@
       }).addTo(map);
     }
 
-    // Ajustar vista a la ruta
+    // ===================================================================
+    // 5. HITOS Y PUNTOS DE REFERENCIA DE LA RUTA
+    // ===================================================================
+    if (typeof puntosReferencia !== 'undefined' && Array.isArray(puntosReferencia)) {
+      puntosReferencia.forEach(punto => {
+        const iconoHito = L.divIcon({
+          className: 'marker-hito-wrap',
+          html: `<div class="marker-hito" title="${punto.nombre}">${punto.icono || '📍'}</div>`,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16]
+        });
+
+        const popupHtml = `
+          <div class="popup-hito-content">
+            <h4>${punto.nombre}</h4>
+            <span class="popup-hora">⏰ Estimado: ${punto.hora}</span>
+            <p>${punto.descripcion}</p>
+          </div>
+        `;
+
+        L.marker(punto.coords, { icon: iconoHito })
+          .bindPopup(popupHtml)
+          .addTo(map);
+      });
+    }
+
     verRutaCompleta();
 
     // ===================================================================
-    // 4. ICONO Y MARCADOR DE LA PROCESIÓN (CON ANIMACIÓN PULSANTE)
+    // 6. ICONO Y MARCADOR DE LA PROCESIÓN (ANIMACIÓN PULSANTE Y HORA)
     // ===================================================================
     const imgIcono = (typeof PROCESION_INFO !== 'undefined' && PROCESION_INFO.iconoProcesion) ? PROCESION_INFO.iconoProcesion : 'logo_trini.png';
     
-    const iconoProcesionHtml = L.divIcon({
-      className: 'marker-procesion-wrap',
-      html: `
-        <div class="marker-pulse-ring"></div>
-        <img src="${imgIcono}" class="marker-procesion-img" onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/806/806086.png';" />
-      `,
-      iconSize: [60, 60],
-      iconAnchor: [30, 30]
-    });
+    function crearIconoProcesion(textoTiempo = "En vivo") {
+      return L.divIcon({
+        className: 'marker-procesion-wrap',
+        html: `
+          <div class="marker-pulse-ring"></div>
+          <img src="${imgIcono}" class="marker-procesion-img" onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/806/806086.png';" />
+          <div class="marker-time-tag" id="markerTimeTag">${textoTiempo}</div>
+        `,
+        iconSize: [60, 60],
+        iconAnchor: [30, 30]
+      });
+    }
 
     let markerProcesion = null;
     let ultimaPosicion = centroInicial;
+    let ultimoTimestamp = 0;
+    let ultimaHoraStr = "";
     let estadoActual = "inactivo";
     let primerCentrado = false;
 
+    // Actualizador de tiempo relativo ("Hace 15 seg", "Hace 1 min")
+    setInterval(() => {
+      if (estadoActual !== "activo" || !ultimoTimestamp) return;
+      const tag = document.getElementById("markerTimeTag");
+      if (!tag) return;
+
+      const segs = Math.floor((Date.now() - ultimoTimestamp) / 1000);
+      if (segs < 10) tag.innerText = "Ahora";
+      else if (segs < 60) tag.innerText = `Hace ${segs}s`;
+      else if (segs < 3600) tag.innerText = `Hace ${Math.floor(segs / 60)}m`;
+      else tag.innerText = ultimaHoraStr || "En vivo";
+    }, 4000);
+
     // ===================================================================
-    // 5. ESCUCHADORES DE FIREBASE EN TIEMPO REAL
+    // 7. ESCUCHADORES DE FIREBASE EN TIEMPO REAL
     // ===================================================================
     if (firebaseActivo) {
-      // Monitor de conexión de Firebase
       db.ref(".info/connected").on("value", (snap) => {
         const conectado = snap.val() === true;
         const badge = document.getElementById("conexionBadge");
@@ -191,22 +264,22 @@
         }
       });
 
-      // Monitor de Estado de la procesión (activo, inactivo, finalizado)
       db.ref("estado").on("value", (snapshot) => {
         const estado = snapshot.val() || "inactivo";
         estadoActual = estado;
         actualizarUIEstado(estado);
       });
 
-      // Monitor de Ubicación en tiempo real
       db.ref("ubicacion").on("value", (snapshot) => {
         const data = snapshot.val();
         if (!data || !data.lat || !data.lng) return;
 
         ultimaPosicion = [data.lat, data.lng];
+        ultimoTimestamp = data.timestamp || Date.now();
+        ultimaHoraStr = data.actualizado || "";
 
         if (estadoActual === "activo") {
-          actualizarPosicionMarcador(ultimaPosicion);
+          actualizarPosicionMarcador(ultimaPosicion, ultimaHoraStr);
         }
       });
     }
@@ -221,7 +294,7 @@
         liveText.innerText = "EN VIVO";
         mensajeOverlay.style.display = "none";
 
-        actualizarPosicionMarcador(ultimaPosicion);
+        actualizarPosicionMarcador(ultimaPosicion, ultimaHoraStr);
         if (!primerCentrado) {
           centrarProcesion();
           primerCentrado = true;
@@ -237,7 +310,6 @@
           markerProcesion = null;
         }
       } else {
-        // Inactivo / En espera
         liveBadge.className = "badge-live inactivo";
         liveText.innerText = "POR INICIAR";
         mensajeOverlay.style.display = "block";
@@ -250,21 +322,24 @@
       }
     }
 
-    function actualizarPosicionMarcador(coords) {
+    function actualizarPosicionMarcador(coords, hora = "") {
+      const tagTexto = hora ? `⏰ ${hora}` : "En vivo";
       if (!markerProcesion) {
-        markerProcesion = L.marker(coords, { icon: iconoProcesionHtml }).addTo(map);
+        markerProcesion = L.marker(coords, { icon: crearIconoProcesion(tagTexto) }).addTo(map);
       } else {
+        // Movimiento suave con animación de Leaflet
         markerProcesion.setLatLng(coords);
+        const tag = document.getElementById("markerTimeTag");
+        if (tag && hora) tag.innerText = `⏰ ${hora}`;
       }
 
-      // Si el mapa no contiene el marcador, agregarlo
       if (!map.hasLayer(markerProcesion)) {
         markerProcesion.addTo(map);
       }
     }
 
     // ===================================================================
-    // 6. FUNCIONES DE INTERACCIÓN
+    // 8. FUNCIONES DE INTERACCIÓN Y COMPARTIR
     // ===================================================================
     function centrarProcesion() {
       if (ultimaPosicion) {
@@ -281,6 +356,17 @@
     function togglePanel() {
       const panel = document.getElementById("panelInfo");
       panel.classList.toggle("colapsado");
+    }
+
+    function compartirWhatsApp() {
+      const titulo = (typeof PROCESION_INFO !== 'undefined' && PROCESION_INFO.titulo) 
+        ? PROCESION_INFO.titulo 
+        : "Solemne Procesión";
+      const url = window.location.href;
+      const texto = `🕊️ *${titulo}*\n\n¡Sigue el recorrido en vivo y conoce la ubicación del anda procesional en tiempo real aquí! 👇\n${url}`;
+      
+      const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(texto)}`;
+      window.open(whatsappUrl, '_blank');
     }
 
     function mostrarAvisoConfiguracion() {
