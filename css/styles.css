@@ -276,7 +276,7 @@ body, html {
 .logo-panel {
   width: 70px;
   height: 70px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 50%;
   border: 3px solid var(--color-gold);
   background: #fff;

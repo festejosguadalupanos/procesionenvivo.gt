@@ -118,42 +118,56 @@ const rutaIdaCoords = rutaProcesion.slice(0, puntoDivisionRuta + 1);
 const rutaVueltaCoords = rutaProcesion.slice(puntoDivisionRuta);
 
 // ===================================================================
-// 📍 HITOS Y PUNTOS DE REFERENCIA DEL CORTEJO (Personalizables)
+// 📍 PUNTOS DE REFERENCIA OFICIALES DEL REZADO (11 DE DICIEMBRE 2026)
 // ===================================================================
 const puntosReferencia = [
   {
-    nombre: "Salida del Cortejo Procesional",
+    numero: "1",
+    nombre: "1. Salida - 16 calle \"A\" y 6ta. Avenida",
     coords: [14.640627717076246, -90.52490154581498],
-    hora: "18:00 hrs",
-    descripcion: "Inicio de la Solemne Procesión de Reparación",
-    icono: "⛪"
+    hora: "18:00 horas",
+    descripcion: "Inicio del Tradicional Rezado de la Virgen de Guadalupe",
+    icono: "1️⃣"
   },
   {
-    nombre: "Parque / Sector El Bosque",
-    coords: [14.640522900506474, -90.52578614730265],
-    hora: "18:40 hrs",
-    descripcion: "Paso frente a los devotos del sector El Bosque",
-    icono: "🔔"
+    numero: "2",
+    nombre: "2. Parroquia Santísima Trinidad",
+    coords: [14.640584511216991, -90.52534491440709],
+    hora: "20:15 horas",
+    descripcion: "Paso solemne frente a la Parroquia Santísima Trinidad",
+    icono: "2️⃣"
   },
   {
-    nombre: "Punto de Retorno / División",
-    coords: [14.638154841251302, -90.5276462592595],
-    hora: "19:30 hrs",
-    descripcion: "Culminación del tramo de ida e inicio de retorno",
-    icono: "🔄"
+    numero: "3",
+    nombre: "3. 13 calle \"C\"",
+    coords: [14.638692036112525, -90.52540259141006],
+    hora: "20:50 horas",
+    descripcion: "Punto de referencia del cortejo procesional",
+    icono: "3️⃣"
   },
   {
-    nombre: "Punto de Homenaje y Quema de Pólvora",
+    numero: "4",
+    nombre: "4. 12 calle \"C\" y 7a. Avenida",
     coords: [14.638559683876158, -90.52832083482485],
-    hora: "20:00 hrs",
-    descripcion: "Solemne homenaje de la Asociación",
-    icono: "✨"
+    hora: "23:30 horas",
+    descripcion: "Paso y homenaje sobre la 7a. Avenida",
+    icono: "4️⃣"
   },
   {
-    nombre: "Entrada del Cortejo",
+    numero: "5",
+    nombre: "5. Oratorio María Auxiliadora",
+    coords: [14.637582610493666, -90.52728684324558],
+    hora: "24:00 horas",
+    descripcion: "Paso frente al Oratorio María Auxiliadora (Media noche)",
+    icono: "5️⃣"
+  },
+  {
+    numero: "6",
+    nombre: "6. Entrada Sede de La Asociación",
     coords: [14.637150516890703, -90.52688853520814],
-    hora: "21:00 hrs",
-    descripcion: "Solemne Entrada y bendición final",
-    icono: "⛪"
+    hora: "02:30 horas",
+    descripcion: "Solemne Entrada a la Sede de la Asociación (Fin del recorrido)",
+    icono: "6️⃣"
   }
 ];
+

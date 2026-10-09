@@ -20,9 +20,9 @@ const FIREBASE_CONFIG = {
 // 📌 INFORMACIÓN DE LA PROCESIÓN (Texto visible en la web)
 // ===================================================================
 const PROCESION_INFO = {
-  titulo: "SOLEMNE PROCESIÓN DE REPARACIÓN A LA SANTÍSIMA TRINIDAD",
-  subtitulo: "Asociación de Festejos Guadalupanos, Sector \"El Bosque\" El Gallito z.3",
-  horario: "VIERNES 22 DE MAYO DEL 2026 | SALIDA: 18:00 hrs | ENTRADA: 21:00 hrs",
+  titulo: "TRADICIONAL REZADO DE LA VIRGEN DE GUADALUPE",
+  subtitulo: "Asociación de Festejos Guadalupanos, Sector \"El Bosque\" El Gallito Zona 3",
+  horario: "VIERNES 11 DE DICIEMBRE DEL 2026 | SALIDA: 18:00 hrs | ENTRADA: 02:30 hrs",
   
   // Coordenadas iniciales por defecto (Ciudad de Guatemala)
   centroInicial: [14.640627, -90.524901],
