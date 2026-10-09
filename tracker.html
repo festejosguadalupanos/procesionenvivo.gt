@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Panel de Transmisión GPS | Tracker Procesión</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="icon" type="image/png" href="logo.png">
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Firebase v8 SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <!-- Estilos y Configuración -->
+  <link rel="stylesheet" href="css/tracker.css">
+  <script src="js/config.js"></script>
+  <script src="js/ruta.js"></script>
+</head>
+
+<body>
+
+  <!-- 🔒 MODAL DE SEGURIDAD POR PIN (OPCIONAL) -->
+  <div id="modalPin" class="modal-pin" style="display: none;">
+    <div class="modal-content">
+      <h2>Acceso Transmisor 🔒</h2>
+      <p>Introduce el PIN de seguridad para transmitir la ubicación.</p>
+      <input type="password" id="inputPin" maxlength="8" placeholder="****" inputmode="numeric">
+      <button onclick="verificarPin()">Ingresar al Tracker</button>
+    </div>
+  </div>
+
+  <!-- 📊 TELEMETRÍA SUPERIOR -->
+  <div class="tracker-header">
+    <div class="tracker-title">
+      <h1>📡 Transmisor GPS</h1>
+      <span id="trackerEstadoTxt" class="tracker-status-tag">Estado: Desconectado</span>
+    </div>
+
+    <div class="telemetry-badges">
+      <div id="badgeSync" class="pill orange">
+        <span>☁️</span> <span id="syncText">Sync...</span>
+      </div>
+      <div id="badgeGps" class="pill blue">
+        <span>🛰️</span> <span id="gpsAccuracy">Sin GPS</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🗺️ MAPA -->
+  <div id="map"></div>
+
+  <!-- 🎮 PANEL DE CONTROL INFERIOR -->
+  <div class="control-panel">
+    
+    <!-- Aviso si está activado el modo toque manual -->
+    <div id="bannerManual" class="manual-mode-banner">
+      👆 Toca cualquier punto en el mapa para posicionar la procesión
+    </div>
+
+    <!-- 1. Estado de la procesión -->
+    <div class="row-state">
+      <button id="btnIniciar" class="btn-state btn-iniciar" onclick="cambiarEstado('activo')">
+        <span>▶️</span> Iniciar
+      </button>
+      <button id="btnPausar" class="btn-state btn-pausar" onclick="cambiarEstado('inactivo')">
+        <span>⏸️</span> Pausar
+      </button>
+      <button id="btnFinalizar" class="btn-state btn-finalizar" onclick="cambiarEstado('finalizado')">
+        <span>⛔</span> Finalizar
+      </button>
+    </div>
+
+    <!-- 2. Acciones GPS principales -->
+    <div class="row-actions">
+      <button id="btnAutoGps" class="btn-action btn-auto-gps" onclick="toggleAutoGPS()">
+        <span id="autoGpsIcon">🚶</span>
+        <span id="autoGpsLabel">Iniciar Auto GPS</span>
+      </button>
+
+      <button class="btn-action btn-manual-sync" onclick="tomarUbicacionGPS(true)">
+        <span>📍</span> Enviar Ahora
+      </button>
+    </div>
+
+    <!-- 3. Herramientas secundarias -->
+    <div class="row-extra">
+      <button id="btnModoManual" class="btn-small" onclick="toggleModoManual()">
+        <span>🗺️</span> Modo Toque Manual
+      </button>
+
+      <button class="btn-small" onclick="deshacerUltimoPunto()">
+        <span>↩️</span> Deshacer punto
+      </button>
+    </div>
+
+  </div>
+
+  <script>
+    // ===================================================================
+    // 1. VERIFICACIÓN DE SEGURIDAD (PIN)
+    // ===================================================================
+    const pinEsperado = (typeof PROCESION_INFO !== 'undefined' && PROCESION_INFO.trackerPin) ? PROCESION_INFO.trackerPin : null;
+
+    if (pinEsperado && sessionStorage.getItem("tracker_auth") !== "true") {
+      document.getElementById("modalPin").style.display = "flex";
+    }
+
+    function verificarPin() {
+      const pinIngresado = document.getElementById("inputPin").value;
+      if (pinIngresado === pinEsperado) {
+        sessionStorage.setItem("tracker_auth", "true");
+        document.getElementById("modalPin").style.display = "none";
+      } else {
+        alert("PIN incorrecto. Intenta nuevamente.");
+      }
+    }
+
+    // ===================================================================
+    // 2. FIREBASE
+    // ===================================================================
+    let db = null;
+    let firebaseListo = false;
+
+    try {
+      if (typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== "PEGA_AQUI_TU_API_KEY") {
+        firebase.initializeApp(FIREBASE_CONFIG);
+        db = firebase.database();
+        firebaseListo = true;
+      } else {
+        alert("⚠️ Recuerda configurar tus credenciales de Firebase en 'js/config.js'");
+      }
+    } catch (e) {
+      console.error("Error Firebase:", e);
+    }
+
+    if (firebaseListo) {
+      db.ref(".info/connected").on("value", (snap) => {
+        const badge = document.getElementById("badgeSync");
+        const txt = document.getElementById("syncText");
+        if (snap.val() === true) {
+          badge.className = "pill green";
+          txt.innerText = "Firebase OK";
+        } else {
+          badge.className = "pill red";
+          txt.innerText = "Sin conexión";
+        }
+      });
+
+      // Escuchar estado actual para marcar el botón activo
+      db.ref("estado").on("value", (snap) => {
+        actualizarBotonesEstado(snap.val() || "inactivo");
+      });
+    }
+
+    // ===================================================================
+    // 3. MAPA LEAFLET
+    // ===================================================================
+    const centroInicial = (typeof PROCESION_INFO !== 'undefined' && PROCESION_INFO.centroInicial) ? PROCESION_INFO.centroInicial : [14.6406, -90.5249];
+    const map = L.map('map', { zoomControl: false }).setView(centroInicial, 17);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    // Dibujar ruta planificada de fondo
+    if (typeof rutaIdaCoords !== 'undefined' && rutaIdaCoords.length > 0) {
+      L.polyline(rutaIdaCoords, { color: '#33ccff', weight: 4, opacity: 0.6 }).addTo(map);
+    }
+    if (typeof rutaVueltaCoords !== 'undefined' && rutaVueltaCoords.length > 0) {
+      L.polyline(rutaVueltaCoords, { color: '#ff0033', weight: 4, opacity: 0.6 }).addTo(map);
+    }
+
+    // Icono del marcador de transmisión
+    const markerIcon = L.icon({
+      iconUrl: (typeof PROCESION_INFO !== 'undefined' && PROCESION_INFO.iconoProcesion) ? PROCESION_INFO.iconoProcesion : 'logo_trini.png',
+      iconSize: [50, 50],
+      iconAnchor: [25, 25],
+      className: 'marker-tracker'
+    });
+
+    let marker = null;
+    let lineaRecorrido = null;
+    let puntosRecorrido = [];
+
+    // ===================================================================
+    // 4. CONTROL DE ESTADOS (INICIAR, PAUSAR, FINALIZAR)
+    // ===================================================================
+    function cambiarEstado(nuevoEstado) {
+      if (!firebaseListo) {
+        alert("Firebase no está configurado aún.");
+        return;
+      }
+
+      db.ref("estado").set(nuevoEstado)
+        .then(() => {
+          actualizarBotonesEstado(nuevoEstado);
+          if (nuevoEstado === "activo") {
+            vibrarExito();
+            alert("✅ Procesión iniciada en vivo");
+          } else if (nuevoEstado === "inactivo") {
+            alert("⏸️ Procesión en pausa");
+          } else if (nuevoEstado === "finalizado") {
+            if (autoGpsActivo) toggleAutoGPS();
+            alert("🔴 Procesión finalizada");
+          }
+        })
+        .catch((err) => {
+          alert("Error actualizando estado: " + err.message);
+        });
+    }
+
+    function actualizarBotonesEstado(estado) {
+      document.getElementById("btnIniciar").classList.toggle("active", estado === "activo");
+      document.getElementById("btnPausar").classList.toggle("active", estado === "inactivo");
+      document.getElementById("btnFinalizar").classList.toggle("active", estado === "finalizado");
+
+      const txt = document.getElementById("trackerEstadoTxt");
+      if (estado === "activo") txt.innerText = "Estado: EN VIVO 🟢";
+      else if (estado === "finalizado") txt.innerText = "Estado: FINALIZADO 🔴";
+      else txt.innerText = "Estado: EN ESPERA 🟡";
+    }
+
+    // ===================================================================
+    // 5. GPS: SEGUIMIENTO AUTOMÁTICO Y MANUAL
+    // ===================================================================
+    let autoGpsActivo = false;
+    let watchId = null;
+    let timerAutoFallback = null;
+
+    function toggleAutoGPS() {
+      const btn = document.getElementById("btnAutoGps");
+      const icon = document.getElementById("autoGpsIcon");
+      const label = document.getElementById("autoGpsLabel");
+
+      if (!autoGpsActivo) {
+        if (!navigator.geolocation) {
+          alert("Tu dispositivo no soporta GPS");
+          return;
+        }
+
+        autoGpsActivo = true;
+        btn.classList.add("on");
+        icon.innerText = "🛑";
+        label.innerText = "Detener Auto GPS";
+
+        // Tomar primera posición inmediatamente
+        tomarUbicacionGPS(false);
+
+        // Activar seguimiento nativo
+        watchId = navigator.geolocation.watchPosition(
+          onGpsSuccess,
+          onGpsError,
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+
+        // Respaldo cada 10 segundos por si watchPosition entra en suspensión
+        timerAutoFallback = setInterval(() => {
+          tomarUbicacionGPS(false);
+        }, 10000);
+
+        vibrarExito();
+      } else {
+        autoGpsActivo = false;
+        btn.classList.remove("on");
+        icon.innerText = "🚶";
+        label.innerText = "Iniciar Auto GPS";
+
+        if (watchId !== null) {
+          navigator.geolocation.clearWatch(watchId);
+          watchId = null;
+        }
+        if (timerAutoFallback !== null) {
+          clearInterval(timerAutoFallback);
+          timerAutoFallback = null;
+        }
+      }
+    }
+
+    function tomarUbicacionGPS(mostrarAlertas = true) {
+      if (!navigator.geolocation) {
+        if (mostrarAlertas) alert("Tu dispositivo no tiene soporte de GPS");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          onGpsSuccess(pos);
+          if (mostrarAlertas) {
+            vibrarExito();
+            alert("📍 Posición enviada a Firebase!");
+          }
+        },
+        (err) => {
+          onGpsError(err);
+          if (mostrarAlertas) alert("No se pudo obtener la ubicación GPS: " + err.message);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    }
+
+    function onGpsSuccess(pos) {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      const accuracy = Math.round(pos.coords.accuracy || 0);
+
+      document.getElementById("gpsAccuracy").innerText = `±${accuracy}m`;
+
+      enviarPosicion(lat, lng);
+    }
+
+    function onGpsError(err) {
+      console.warn("Error GPS:", err);
+      document.getElementById("gpsAccuracy").innerText = "Sin señal";
+    }
+
+    // ===================================================================
+    // 6. MODO TOQUE MANUAL (EN CASO DE CALLES SIN SEÑAL GPS)
+    // ===================================================================
+    let modoManualActivo = false;
+
+    function toggleModoManual() {
+      modoManualActivo = !modoManualActivo;
+      const banner = document.getElementById("bannerManual");
+      const btn = document.getElementById("btnModoManual");
+
+      if (modoManualActivo) {
+        banner.classList.add("show");
+        btn.style.borderColor = "var(--color-orange)";
+        btn.style.color = "var(--color-orange)";
+      } else {
+        banner.classList.remove("show");
+        btn.style.borderColor = "rgba(255,255,255,0.2)";
+        btn.style.color = "var(--color-subtext)";
+      }
+    }
+
+    map.on('click', (e) => {
+      if (modoManualActivo) {
+        const { lat, lng } = e.latlng;
+        enviarPosicion(lat, lng);
+        vibrarExito();
+      }
+    });
+
+    // ===================================================================
+    // 7. ENVÍO A FIREBASE Y DIBUJO EN MAPA
+    // ===================================================================
+    function enviarPosicion(lat, lng) {
+      const punto = [lat, lng];
+
+      // Actualizar mapa local
+      if (marker) {
+        marker.setLatLng(punto);
+      } else {
+        marker = L.marker(punto, { icon: markerIcon }).addTo(map);
+      }
+
+      puntosRecorrido.push(punto);
+
+      if (lineaRecorrido) {
+        map.removeLayer(lineaRecorrido);
+      }
+
+      lineaRecorrido = L.polyline(puntosRecorrido, {
+        color: '#ffd700',
+        weight: 6,
+        opacity: 0.95
+      }).addTo(map);
+
+      map.panTo(punto);
+
+      // Enviar a Firebase
+      if (firebaseListo) {
+        db.ref("ubicacion").set({
+          lat: lat,
+          lng: lng,
+          actualizado: new Date().toLocaleTimeString()
+        });
+
+        // Guardar historial del recorrido
+        db.ref("recorrido").set(puntosRecorrido);
+      }
+    }
+
+    // ===================================================================
+    // 8. DESHACER ÚLTIMO PUNTO
+    // ===================================================================
+    function deshacerUltimoPunto() {
+      if (puntosRecorrido.length === 0) {
+        alert("No hay puntos registrados.");
+        return;
+      }
+
+      puntosRecorrido.pop();
+
+      if (lineaRecorrido) {
+        map.removeLayer(lineaRecorrido);
+      }
+
+      if (puntosRecorrido.length > 0) {
+        lineaRecorrido = L.polyline(puntosRecorrido, {
+          color: '#ffd700',
+          weight: 6,
+          opacity: 0.95
+        }).addTo(map);
+
+        const ultimo = puntosRecorrido[puntosRecorrido.length - 1];
+        marker.setLatLng(ultimo);
+        map.panTo(ultimo);
+
+        if (firebaseListo) {
+          db.ref("ubicacion").set({ lat: ultimo[0], lng: ultimo[1] });
+          db.ref("recorrido").set(puntosRecorrido);
+        }
+      } else {
+        if (marker) {
+          map.removeLayer(marker);
+          marker = null;
+        }
+        if (firebaseListo) {
+          db.ref("recorrido").set([]);
+        }
+      }
+      alert("Último punto eliminado");
+    }
+
+    function vibrarExito() {
+      if (navigator.vibrate) {
+        navigator.vibrate(100);
+      }
+    }
+  </script>
+
+</body>
+</html>

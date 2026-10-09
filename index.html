@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Procesión en Vivo | Seguimiento GPS</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="Seguimiento GPS en tiempo real de la Solemne Procesión.">
+  <link rel="icon" type="image/png" href="logo.png">
+
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+  <!-- Firebase v8 SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <!-- Estilos y Configuración -->
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/config.js"></script>
+  <script src="js/ruta.js"></script>
+</head>
+
+<body>
+
+  <!-- 🗺️ CONTENEDOR DEL MAPA -->
+  <div id="map"></div>
+
+  <!-- 🟢 BARRA SUPERIOR (ESTADO EN VIVO Y CONEXIÓN) -->
+  <div class="header-bar">
+    <div id="liveBadge" class="badge-live inactivo">
+      <span class="pulsing-dot"></span>
+      <span id="liveText">POR INICIAR</span>
+    </div>
+    <div id="conexionBadge" class="badge-conexion">
+      <span id="conexionIcon">●</span>
+      <span id="conexionText">Conectando...</span>
+    </div>
+  </div>
+
+  <!-- 🖼️ LOGO SUPERIOR DERECHO -->
+  <img id="imgLogoTop" src="logo.png" alt="Logo" class="logo-top" onerror="this.style.display='none'">
+
+  <!-- 📢 MENSAJE CENTRAL (Cuando no ha iniciado o ya finalizó) -->
+  <div id="mensajeEstado" class="mensaje-overlay">
+    🟡 La procesión aún no ha iniciado
+  </div>
+
+  <!-- 📍 BOTONES FLOTANTES DE ACCIÓN -->
+  <div class="btn-float-container">
+    <button class="btn-float" onclick="centrarProcesion()" title="Centrar en la Procesión">📍</button>
+    <button class="btn-float" onclick="verRutaCompleta()" title="Ver recorrido completo">🗺️</button>
+  </div>
+
+  <!-- 📌 LEYENDA DEL RECORRIDO -->
+  <div class="leyenda">
+    <div class="leyenda-item">
+      <div class="linea azul"></div>
+      <span>Ida</span>
+    </div>
+    <div class="leyenda-item">
+      <div class="linea rojo"></div>
+      <span>Vuelta</span>
+    </div>
+  </div>
+
+  <!-- 📋 PANEL INFERIOR (INFORMACIÓN DE LA PROCESIÓN) -->
+  <div id="panelInfo" class="panel">
+    <div class="panel-toggle-btn" onclick="togglePanel()" title="Minimizar / Expandir"></div>
+    <img id="imgLogoPanel" src="logo_panel.png" alt="Insignia" class="logo-panel" onerror="this.style.display='none'">
+    
+    <div class="info">
+      <h3 id="txtTitulo">SOLEMNE PROCESIÓN</h3>
+      <h2 id="txtSubtitulo">Asociación de Festejos</h2>
+      <p id="txtHorario">HORARIO DE SALIDA Y ENTRADA</p>
+    </div>
+  </div>
+
+  <script>
+    // ===================================================================
+    // 1. INICIALIZACIÓN DE FIREBASE
+    // ===================================================================
+    let db = null;
+    let firebaseActivo = false;
+
+    try {
+      if (typeof FIREBASE_CONFIG !== 'undefined' && FIREBASE_CONFIG.apiKey && FIREBASE_CONFIG.apiKey !== "PEGA_AQUI_TU_API_KEY") {
+        firebase.initializeApp(FIREBASE_CONFIG);
+        db = firebase.database();
+        firebaseActivo = true;
+      } else {
+        mostrarAvisoConfiguracion();
+      }
+    } catch (e) {
+      console.error("Error inicializando Firebase:", e);
+      document.getElementById("conexionText").innerText = "Error Config";
+    }
+
+    // ===================================================================
+    // 2. INICIALIZACIÓN DE TEXTOS Y LOGOS
+    // ===================================================================
+    if (typeof PROCESION_INFO !== 'undefined') {
+      document.getElementById("txtTitulo").innerText = PROCESION_INFO.titulo || "";
+      document.getElementById("txtSubtitulo").innerText = PROCESION_INFO.subtitulo || "";
+      document.getElementById("txtHorario").innerText = PROCESION_INFO.horario || "";
+      if (PROCESION_INFO.logoPrincipal) document.getElementById("imgLogoTop").src = PROCESION_INFO.logoPrincipal;
+      if (PROCESION_INFO.logoPanel) document.getElementById("imgLogoPanel").src = PROCESION_INFO.logoPanel;
+    }
+
+    // ===================================================================
+    // 3. MAPA LEAFLET
+    // ===================================================================
+    const centroInicial = (typeof PROCESION_INFO !== 'undefined' && PROCESION_INFO.centroInicial) ? PROCESION_INFO.centroInicial : [14.6406, -90.5249];
+    const zoomInicial = (typeof PROCESION_INFO !== 'undefined' && PROCESION_INFO.zoomInicial) ? PROCESION_INFO.zoomInicial : 16;
+
+    const map = L.map('map', {
+      zoomControl: false // Ubicamos controles o usamos gestos
+    }).setView(centroInicial, zoomInicial);
+
+    // Controles de zoom abajo a la derecha
+    L.control.zoom({ position: 'topleft' }).addTo(map);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Dibujar rutas (Ida y Vuelta)
+    let lineaIda = null;
+    let lineaVuelta = null;
+
+    if (typeof rutaIdaCoords !== 'undefined' && rutaIdaCoords.length > 0) {
+      lineaIda = L.polyline(rutaIdaCoords, {
+        color: '#33ccff',
+        weight: 5,
+        opacity: 0.95,
+        lineCap: 'round',
+        lineJoin: 'round'
+      }).addTo(map);
+    }
+
+    if (typeof rutaVueltaCoords !== 'undefined' && rutaVueltaCoords.length > 0) {
+      lineaVuelta = L.polyline(rutaVueltaCoords, {
+        color: '#ff0033',
+        weight: 5,
+        opacity: 0.95,
+        lineCap: 'round',
+        lineJoin: 'round'
+      }).addTo(map);
+    }
+
+    // Ajustar vista a la ruta
+    verRutaCompleta();
+
+    // ===================================================================
+    // 4. ICONO Y MARCADOR DE LA PROCESIÓN (CON ANIMACIÓN PULSANTE)
+    // ===================================================================
+    const imgIcono = (typeof PROCESION_INFO !== 'undefined' && PROCESION_INFO.iconoProcesion) ? PROCESION_INFO.iconoProcesion : 'logo_trini.png';
+    
+    const iconoProcesionHtml = L.divIcon({
+      className: 'marker-procesion-wrap',
+      html: `
+        <div class="marker-pulse-ring"></div>
+        <img src="${imgIcono}" class="marker-procesion-img" onerror="this.onerror=null; this.src='https://cdn-icons-png.flaticon.com/512/806/806086.png';" />
+      `,
+      iconSize: [60, 60],
+      iconAnchor: [30, 30]
+    });
+
+    let markerProcesion = null;
+    let ultimaPosicion = centroInicial;
+    let estadoActual = "inactivo";
+    let primerCentrado = false;
+
+    // ===================================================================
+    // 5. ESCUCHADORES DE FIREBASE EN TIEMPO REAL
+    // ===================================================================
+    if (firebaseActivo) {
+      // Monitor de conexión de Firebase
+      db.ref(".info/connected").on("value", (snap) => {
+        const conectado = snap.val() === true;
+        const badge = document.getElementById("conexionBadge");
+        const texto = document.getElementById("conexionText");
+        
+        if (conectado) {
+          badge.classList.remove("offline");
+          texto.innerText = "En línea";
+        } else {
+          badge.classList.add("offline");
+          texto.innerText = "Reconectando...";
+        }
+      });
+
+      // Monitor de Estado de la procesión (activo, inactivo, finalizado)
+      db.ref("estado").on("value", (snapshot) => {
+        const estado = snapshot.val() || "inactivo";
+        estadoActual = estado;
+        actualizarUIEstado(estado);
+      });
+
+      // Monitor de Ubicación en tiempo real
+      db.ref("ubicacion").on("value", (snapshot) => {
+        const data = snapshot.val();
+        if (!data || !data.lat || !data.lng) return;
+
+        ultimaPosicion = [data.lat, data.lng];
+
+        if (estadoActual === "activo") {
+          actualizarPosicionMarcador(ultimaPosicion);
+        }
+      });
+    }
+
+    function actualizarUIEstado(estado) {
+      const liveBadge = document.getElementById("liveBadge");
+      const liveText = document.getElementById("liveText");
+      const mensajeOverlay = document.getElementById("mensajeEstado");
+
+      if (estado === "activo") {
+        liveBadge.className = "badge-live";
+        liveText.innerText = "EN VIVO";
+        mensajeOverlay.style.display = "none";
+
+        actualizarPosicionMarcador(ultimaPosicion);
+        if (!primerCentrado) {
+          centrarProcesion();
+          primerCentrado = true;
+        }
+      } else if (estado === "finalizado") {
+        liveBadge.className = "badge-live finalizado";
+        liveText.innerText = "FINALIZADO";
+        mensajeOverlay.style.display = "block";
+        mensajeOverlay.innerHTML = "🔴 La procesión ha finalizado";
+
+        if (markerProcesion) {
+          map.removeLayer(markerProcesion);
+          markerProcesion = null;
+        }
+      } else {
+        // Inactivo / En espera
+        liveBadge.className = "badge-live inactivo";
+        liveText.innerText = "POR INICIAR";
+        mensajeOverlay.style.display = "block";
+        mensajeOverlay.innerHTML = "🟡 La procesión aún no ha iniciado";
+
+        if (markerProcesion) {
+          map.removeLayer(markerProcesion);
+          markerProcesion = null;
+        }
+      }
+    }
+
+    function actualizarPosicionMarcador(coords) {
+      if (!markerProcesion) {
+        markerProcesion = L.marker(coords, { icon: iconoProcesionHtml }).addTo(map);
+      } else {
+        markerProcesion.setLatLng(coords);
+      }
+
+      // Si el mapa no contiene el marcador, agregarlo
+      if (!map.hasLayer(markerProcesion)) {
+        markerProcesion.addTo(map);
+      }
+    }
+
+    // ===================================================================
+    // 6. FUNCIONES DE INTERACCIÓN
+    // ===================================================================
+    function centrarProcesion() {
+      if (ultimaPosicion) {
+        map.setView(ultimaPosicion, 17, { animate: true, duration: 1.2 });
+      }
+    }
+
+    function verRutaCompleta() {
+      if (typeof rutaProcesion !== 'undefined' && rutaProcesion.length > 0) {
+        map.fitBounds(rutaProcesion, { padding: [50, 50] });
+      }
+    }
+
+    function togglePanel() {
+      const panel = document.getElementById("panelInfo");
+      panel.classList.toggle("colapsado");
+    }
+
+    function mostrarAvisoConfiguracion() {
+      const msg = document.getElementById("mensajeEstado");
+      msg.style.display = "block";
+      msg.innerHTML = "⚠️ Falta configurar Firebase en <b>js/config.js</b>";
+    }
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,302 @@
+/* ===================================================================
+   🛰️ ESTILOS DEL TRANSMISOR (TRACKER GPS)
+   =================================================================== */
+
+:root {
+  --bg-dark: #0f172a;
+  --bg-card: rgba(30, 41, 59, 0.95);
+  --color-green: #10b981;
+  --color-red: #ef4444;
+  --color-blue: #3b82f6;
+  --color-orange: #f59e0b;
+  --color-gold: #ffd700;
+  --color-text: #f8fafc;
+  --color-subtext: #94a3b8;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--color-text);
+  overflow: hidden;
+}
+
+#map {
+  width: 100%;
+  height: 100vh;
+  z-index: 1;
+}
+
+/* 📊 BARRA SUPERIOR DE TELEMETRÍA */
+.tracker-header {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  background: var(--bg-card);
+  padding: 10px 16px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 1000;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+}
+
+.tracker-title {
+  display: flex;
+  flex-direction: column;
+}
+
+.tracker-title h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-gold);
+}
+
+.tracker-status-tag {
+  font-size: 11px;
+  color: var(--color-subtext);
+  margin-top: 2px;
+}
+
+.telemetry-badges {
+  display: flex;
+  gap: 8px;
+}
+
+.pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.pill.green { color: var(--color-green); border-color: rgba(16, 185, 129, 0.3); }
+.pill.red { color: var(--color-red); border-color: rgba(239, 68, 68, 0.3); }
+.pill.orange { color: var(--color-orange); border-color: rgba(245, 158, 11, 0.3); }
+.pill.blue { color: var(--color-blue); border-color: rgba(59, 130, 246, 0.3); }
+
+/* 🎮 PANEL DE CONTROL FLOTANTE (INFERIOR) */
+.control-panel {
+  position: absolute;
+  bottom: 16px;
+  left: 12px;
+  right: 12px;
+  background: var(--bg-card);
+  border-radius: 20px;
+  padding: 14px;
+  z-index: 1000;
+  box-shadow: 0 6px 25px rgba(0,0,0,0.6);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Fila de estado de la procesión */
+.row-state {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.btn-state {
+  padding: 12px 6px;
+  border-radius: 12px;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: transform 0.15s, opacity 0.2s;
+}
+
+.btn-state:active {
+  transform: scale(0.95);
+}
+
+.btn-iniciar { background: linear-gradient(135deg, #059669, #10b981); }
+.btn-pausar  { background: linear-gradient(135deg, #d97706, #f59e0b); }
+.btn-finalizar { background: linear-gradient(135deg, #dc2626, #ef4444); }
+
+.btn-state.active {
+  box-shadow: 0 0 0 3px white, 0 4px 15px rgba(0,0,0,0.4);
+}
+
+/* Fila de acción de GPS */
+.row-actions {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 10px;
+}
+
+.btn-action {
+  padding: 14px 12px;
+  border-radius: 14px;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transition: all 0.2s;
+}
+
+.btn-auto-gps {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+}
+
+.btn-auto-gps.on {
+  background: linear-gradient(135deg, #059669, #10b981);
+  animation: pulse-auto 2s infinite;
+}
+
+@keyframes pulse-auto {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.btn-manual-sync {
+  background: #334155;
+  color: #f1f5f9;
+}
+
+.btn-manual-sync:hover {
+  background: #475569;
+}
+
+/* Barra inferior secundaria: manual touch & deshacer */
+.row-extra {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  font-size: 12px;
+}
+
+.btn-small {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: var(--color-subtext);
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.btn-small:hover {
+  color: white;
+  border-color: white;
+}
+
+/* Modo toque en el mapa aviso */
+.manual-mode-banner {
+  display: none;
+  background: #f59e0b;
+  color: #1a1a1a;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.manual-mode-banner.show {
+  display: block;
+}
+
+/* MODAL DE SEGURIDAD (PIN) */
+.modal-pin {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(8px);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-content {
+  background: var(--bg-card);
+  padding: 26px;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 340px;
+  text-align: center;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+}
+
+.modal-content h2 {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+  color: var(--color-gold);
+}
+
+.modal-content p {
+  font-size: 12px;
+  color: var(--color-subtext);
+  margin-bottom: 20px;
+}
+
+.modal-content input {
+  width: 100%;
+  padding: 12px;
+  font-size: 20px;
+  text-align: center;
+  letter-spacing: 4px;
+  border-radius: 12px;
+  border: 2px solid #475569;
+  background: #0f172a;
+  color: white;
+  margin-bottom: 16px;
+  outline: none;
+}
+
+.modal-content input:focus {
+  border-color: var(--color-gold);
+}
+
+.modal-content button {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background: var(--color-gold);
+  color: #0f172a;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
