@@ -420,7 +420,7 @@ const rutaProcesion = [
 ];
 
 // Punto donde termina la ida e inicia el retorno
-const puntoDivisionRuta = 55;
+const puntoDivisionRuta = 200;
 
 // Segmentos calculados
 const rutaIdaCoords = rutaProcesion.slice(0, puntoDivisionRuta + 1);
@@ -433,7 +433,7 @@ const puntosReferencia = [
   {
     numero: "1",
     nombre: "1. Salida - 16 calle \"A\" y 6ta. Avenida",
-    coords: [14.640627717076246, -90.52490154581498],
+    coords: [14.634043071488678, -90.52826790557671],
     hora: "18:00 horas",
     descripcion: "Inicio del Tradicional Rezado de la Virgen de Guadalupe",
     icono: "1️⃣"
@@ -441,7 +441,7 @@ const puntosReferencia = [
   {
     numero: "2",
     nombre: "2. Parroquia Santísima Trinidad",
-    coords: [14.640584511216991, -90.52534491440709],
+    coords: [14.635835695852146, -90.5267343525719],
     hora: "20:15 horas",
     descripcion: "Paso solemne frente a la Parroquia Santísima Trinidad",
     icono: "2️⃣"
@@ -449,7 +449,7 @@ const puntosReferencia = [
   {
     numero: "3",
     nombre: "3. 13 calle \"C\"",
-    coords: [14.638692036112525, -90.52540259141006],
+    coords: [14.637076185940732, -90.52653184579104],
     hora: "20:50 horas",
     descripcion: "Punto de referencia del cortejo procesional",
     icono: "3️⃣"
@@ -457,7 +457,7 @@ const puntosReferencia = [
   {
     numero: "4",
     nombre: "4. 12 calle \"C\" y 7a. Avenida",
-    coords: [14.638559683876158, -90.52832083482485],
+    coords: [14.638512602414194, -90.52797487423017],
     hora: "23:30 horas",
     descripcion: "Paso y homenaje sobre la 7a. Avenida",
     icono: "4️⃣"
@@ -465,7 +465,7 @@ const puntosReferencia = [
   {
     numero: "5",
     nombre: "5. Oratorio María Auxiliadora",
-    coords: [14.637582610493666, -90.52728684324558],
+    coords: [14.640172565860091, -90.52598141016469],
     hora: "24:00 horas",
     descripcion: "Paso frente al Oratorio María Auxiliadora (Media noche)",
     icono: "5️⃣"
@@ -473,7 +473,7 @@ const puntosReferencia = [
   {
     numero: "6",
     nombre: "6. Entrada Sede de La Asociación",
-    coords: [14.637150516890703, -90.52688853520814],
+    coords: [14.641184754526833, -90.52901606394686],
     hora: "02:30 horas",
     descripcion: "Solemne Entrada a la Sede de la Asociación (Fin del recorrido)",
     icono: "6️⃣"
