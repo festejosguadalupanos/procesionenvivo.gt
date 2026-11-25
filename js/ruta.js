@@ -443,7 +443,6 @@ const puntosReferencia = [
     nombre: "2. Parroquia Santísima Trinidad",
     coords: [14.635835695852146, -90.5267343525719],
     hora: "20:15 horas",
-    descripcion: "Paso solemne frente a la Parroquia Santísima Trinidad",
     icono: "2️⃣"
   },
   {
@@ -451,7 +450,6 @@ const puntosReferencia = [
     nombre: "3. 13 calle \"C\"",
     coords: [14.637076185940732, -90.52653184579104],
     hora: "20:50 horas",
-    descripcion: "Punto de referencia del cortejo procesional",
     icono: "3️⃣"
   },
   {
@@ -459,7 +457,6 @@ const puntosReferencia = [
     nombre: "4. 12 calle \"C\" y 7a. Avenida",
     coords: [14.638512602414194, -90.52797487423017],
     hora: "23:30 horas",
-    descripcion: "Paso y homenaje sobre la 7a. Avenida",
     icono: "4️⃣"
   },
   {
@@ -467,7 +464,6 @@ const puntosReferencia = [
     nombre: "5. Oratorio María Auxiliadora",
     coords: [14.640172565860091, -90.52598141016469],
     hora: "24:00 horas",
-    descripcion: "Paso frente al Oratorio María Auxiliadora (Media noche)",
     icono: "5️⃣"
   },
   {
