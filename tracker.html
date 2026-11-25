@@ -10,6 +10,9 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- Leaflet PolylineDecorator (Flechas de dirección) -->
+  <script src="https://cdn.jsdelivr.net/npm/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.min.js"></script>
+
   <!-- Firebase v8 SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -183,12 +186,40 @@
       attribution: '© OpenStreetMap'
     }).addTo(map);
 
-    // Dibujar ruta planificada de fondo
+    // Dibujar ruta planificada de fondo con flechas de dirección
     if (typeof rutaIdaCoords !== 'undefined' && rutaIdaCoords.length > 0) {
-      L.polyline(rutaIdaCoords, { color: '#33ccff', weight: 4, opacity: 0.6 }).addTo(map);
+      const lineaIdaTracker = L.polyline(rutaIdaCoords, { color: '#33ccff', weight: 4, opacity: 0.7 }).addTo(map);
+      if (typeof L.polylineDecorator === 'function') {
+        L.polylineDecorator(lineaIdaTracker, {
+          patterns: [{
+            offset: 25,
+            repeat: 70,
+            symbol: L.Symbol.arrowHead({
+              pixelSize: 9,
+              headAngle: 45,
+              polygon: false,
+              pathOptions: { stroke: true, weight: 2, color: '#33ccff', opacity: 0.85 }
+            })
+          }]
+        }).addTo(map);
+      }
     }
     if (typeof rutaVueltaCoords !== 'undefined' && rutaVueltaCoords.length > 0) {
-      L.polyline(rutaVueltaCoords, { color: '#ff0033', weight: 4, opacity: 0.6 }).addTo(map);
+      const lineaVueltaTracker = L.polyline(rutaVueltaCoords, { color: '#ff0033', weight: 4, opacity: 0.7 }).addTo(map);
+      if (typeof L.polylineDecorator === 'function') {
+        L.polylineDecorator(lineaVueltaTracker, {
+          patterns: [{
+            offset: 25,
+            repeat: 70,
+            symbol: L.Symbol.arrowHead({
+              pixelSize: 9,
+              headAngle: 45,
+              polygon: false,
+              pathOptions: { stroke: true, weight: 2, color: '#ff0033', opacity: 0.85 }
+            })
+          }]
+        }).addTo(map);
+      }
     }
 
     // Icono del marcador de transmisión

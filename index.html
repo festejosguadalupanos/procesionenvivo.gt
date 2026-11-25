@@ -11,6 +11,9 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- Leaflet PolylineDecorator (Flechas de dirección) -->
+  <script src="https://cdn.jsdelivr.net/npm/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.min.js"></script>
+
   <!-- Firebase v8 SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -147,7 +150,7 @@
     }
 
     // ===================================================================
-    // 4. DIBUJAR RUTAS (IDA Y VUELTA)
+    // 4. DIBUJAR RUTAS (IDA Y VUELTA) CON FLECHAS DE DIRECCIÓN
     // ===================================================================
     let lineaIda = null;
     let lineaVuelta = null;
@@ -160,6 +163,29 @@
         lineCap: 'round',
         lineJoin: 'round'
       }).addTo(map);
+
+      // Flechas de dirección para la ruta de Ida (Celeste)
+      if (typeof L.polylineDecorator === 'function') {
+        L.polylineDecorator(lineaIda, {
+          patterns: [
+            {
+              offset: 25,
+              repeat: 65,
+              symbol: L.Symbol.arrowHead({
+                pixelSize: 10,
+                headAngle: 45,
+                polygon: false,
+                pathOptions: {
+                  stroke: true,
+                  weight: 2.5,
+                  color: '#33ccff',
+                  opacity: 0.95
+                }
+              })
+            }
+          ]
+        }).addTo(map);
+      }
     }
 
     if (typeof rutaVueltaCoords !== 'undefined' && rutaVueltaCoords.length > 0) {
@@ -170,6 +196,29 @@
         lineCap: 'round',
         lineJoin: 'round'
       }).addTo(map);
+
+      // Flechas de dirección para la ruta de Vuelta (Roja)
+      if (typeof L.polylineDecorator === 'function') {
+        L.polylineDecorator(lineaVuelta, {
+          patterns: [
+            {
+              offset: 25,
+              repeat: 65,
+              symbol: L.Symbol.arrowHead({
+                pixelSize: 10,
+                headAngle: 45,
+                polygon: false,
+                pathOptions: {
+                  stroke: true,
+                  weight: 2.5,
+                  color: '#ff0033',
+                  opacity: 0.95
+                }
+              })
+            }
+          ]
+        }).addTo(map);
+      }
     }
 
     // ===================================================================
