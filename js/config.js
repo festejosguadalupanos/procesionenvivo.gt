@@ -31,7 +31,7 @@ const PROCESION_INFO = {
   // Rutas de imágenes (pueden ser locales o URLs web)
   logoPrincipal: "logo.png",
   logoPanel: "logo_panel.png",
-  iconoProcesion: "logo_trini.png",
+  iconoProcesion: "logo_ubi.png",
 
   // Clave PIN para el Tracker (opcional: cámbiala para proteger la transmisión)
   trackerPin: "2026"
